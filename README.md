@@ -1,3 +1,6 @@
+# pip3 install pysubs2==1.6.0 # if ImportError: cannot import name 'MutableSequence' from 'collections'
+# --merge trans|merge|both
+
 # TranslateSubs
 It is a tool to translate movie subtitles from one language into another, or even show multiple language subtitles together. The tool is powered by Google Translate, thus even though the translations might not always be perfect, it supports a very wide range of languages!
 

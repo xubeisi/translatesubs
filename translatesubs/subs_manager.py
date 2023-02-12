@@ -53,17 +53,21 @@ class SubsManager:
         # translated --> main
         for main, secondary, sub, origin_sub in zip(main_subs, secondary_subs, self.subs, self.origin_subs):
             main = Sub.merge_multiline(main, int(char_limit))
-            secondary = Sub.merge_multiline(secondary, int(char_limit * 100 / secondary_scale))
 
             # 1. For now ignore the in-line based styling e.g. bold single word.
             # 2. Replace \n with \N as otherwise the same sub will be treated as separate event aka next sub.
             # NOTE: When writing into plaintext, \n is replaced with \N. But we also want to add custom styling..
             main = SubsManager._replace_with_capital_newline(main)
-            secondary = SubsManager._replace_with_capital_newline(secondary)
+            if merge:
+                secondary = Sub.merge_multiline(secondary, int(char_limit * 100 / secondary_scale))
+                secondary = SubsManager._replace_with_capital_newline(secondary)
 
-            secondary = SubsManager._style_secondary(secondary, merge, secondary_scale)
+                secondary = SubsManager._style_secondary(secondary, merge, secondary_scale)
+            else:
+                secondary = ""
 
             origin_sub.text = f'{sub.open_style}{main}{secondary}{sub.close_style}'
+#            import pdb; pdb.set_trace()
 
     def save_subs(self, subs_out: str):
         self.origin_subs.save(subs_out)

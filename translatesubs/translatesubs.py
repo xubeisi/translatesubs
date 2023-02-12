@@ -21,20 +21,20 @@ def main():
     parser = argparse.ArgumentParser(
         description='It is a tool to translate movie subtitles from one language into another, or even show multiple '
                     'language subtitles together.',
-        usage='python translatesubs.py video.mkv output.ass --merge --to_lang fr')
+        usage='python translatesubs.py video.mkv output.ass --merge both --to_lang zh-cn')
     parser.add_argument('input', type=str,
                         help='Input file to translate; By default it is a subtitle file but if flag --video_file is'
                              ' set, then this is video file name.')
     parser.add_argument('output', type=str, help='Generated translated subtitle file.')
     parser.add_argument('--encoding', default='utf-8', type=str,
                         help='Input file encoding, which defaults to "utf-8". To determine it automatically use "auto"')
-    parser.add_argument('--to_lang', default='es', type=str, help='Language to which translate to.')
+    parser.add_argument('--to_lang', default='zh-cn', type=str, help='Language to which translate to.')
     parser.add_argument('--pronounce_original', action='store_true',
                         help='Use pronunciation rather than writing form for origin subs e.g. useful for Japanese')
     parser.add_argument('--pronounce_translated', action='store_true',
                         help='Use pronunciation rather than writing form for translated subs e.g. useful for Japanese')
-    parser.add_argument('--merge', action='store_true',
-                        help='Set to see both, the original (at bottom) and the translated (on top), subtitles.')
+    parser.add_argument('--merge', default='both', type=str,
+                        help='merge: the original (at bottom) and the translated (on top); trans: the translated; both: save both files as output.zh-cn.srt and output.merge.srt ')
     parser.add_argument('--reverse', action='store_true',
                         help='Display original subs on top and translated at the bottom instead, when --merge is set.')
     parser.add_argument('--secondary_scale', default=80, type=int,
@@ -95,11 +95,20 @@ def main():
     # To display firstly original and translated below instead
     if args.reverse:
         original, translated = translated, original
-
-    subs_manager.update_subs(main_subs=translated, secondary_subs=original,
-                             merge=args.merge, secondary_scale=args.secondary_scale,
-                             char_limit=args.line_char_limit)
-    subs_manager.save_subs(args.output)
+        
+    tmps = args.output.split(".")
+    if args.merge in [ 'both', 'merge' ]:
+        subs_manager.update_subs(main_subs=translated, secondary_subs=original,
+                                merge=1, secondary_scale=args.secondary_scale,
+                                 char_limit=args.line_char_limit)
+        fout = ".".join(tmps[:-1] + [ 'merge', tmps[-1] ])
+        subs_manager.save_subs(fout)
+    if args.merge in [ 'both', 'trans' ]:
+        subs_manager.update_subs(main_subs=translated, secondary_subs=original,
+                                merge=0, secondary_scale=args.secondary_scale,
+                                char_limit=args.line_char_limit)
+        fout = ".".join(tmps[:-1] + [ args.to_lang, tmps[-1] ])
+        subs_manager.save_subs(fout)
     print('Finished!')
 
 
