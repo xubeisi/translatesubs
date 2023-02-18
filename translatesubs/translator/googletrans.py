@@ -1,7 +1,7 @@
 import googletrans
 from typing import List, Iterator
 import logging
-import re
+import re, time
 from translatesubs.translator.itranslator import ITranslator
 from translatesubs.translator.language import Language
 from translatesubs.translator.translated import Translated
@@ -40,12 +40,65 @@ Logic:
 
 
 class GoogleTrans(ITranslator):
+    separator = " $$$ "
+    separator_out = separator.replace(" ","")
     def get_char_limit(self) -> int:
         return 5000
 
-    def translate(self, text: List[str], to_lang: str) -> Iterator[Translated]:
+    def set_separator(self, separator: str) -> None:
+        self.separator = separator
+        self.separator_out = separator.replace(" ","")
+
+    def trynarrowdown(self, tmpo: List[str], to_lang: str):
+        separator, separator_out = self.separator, self.separator_out
+        tmpt_out, nogoods = [], []
+        isep = int(len(tmpo)/2)
+        if isep > 1:
+            tmpo_left = tmpo[:isep]
+            tmpo_left_str = separator.join(tmpo_left)
+            tmpt_left_str = self._do_translate(tmpo_left_str, to_lang)
+            tmpt = tmpt_left_str.text.strip().split(separator_out)
+            if len(tmpt) == isep:
+                tmpt_out += tmpt
+            else:
+                tmpt, nogood = self.trynarrowdown(tmpo_left, to_lang)
+                tmpt_out += tmpt
+                nogoods += nogood
+            tmpo_right = tmpo[isep:]
+            tmpo_right_str = separator.join(tmpo_right)
+            tmpt_right_str = self._do_translate(tmpo_right_str, to_lang)
+            tmpt = tmpt_right_str.text.strip().split(separator)
+            if len(tmpt) == isep:
+                tmpt_out += tmpt
+            else:
+                tmpt, nogood = self.trynarrowdown(tmpo_right, to_lang)
+                tmpt_out += tmpt
+                nogoods += nogood
+        else:
+            tmpo_left = tmpo
+            tmpo_left_str = separator.join(tmpo_left)
+            tmpt_left_str = self._do_translate(tmpo_left_str, to_lang)
+            tmpt = tmpt_left_str.text.strip().split(separator_out)
+            n_nogood = len(tmpo_left) - len(tmpt)
+            tmpt_out = tmpt + [ "" ] * (n_nogood)
+            nogoods += tmpo_left
+        time.sleep(0.2)
+        #import pdb; pdb.set_trace()
+        #print(list(zip(tmpo_left,tmpt_out)))
+        print(f"trynarrowdown: {isep}",nogoods)
+        return tmpt_out, nogoods
+            
+    def translate(self, text: List[str], to_lang: str, iftrynarrow = "try") -> Iterator[Translated]:
+        separator, separator_out = self.separator, self.separator_out
         google_translated = GoogleTrans._do_translate(text, to_lang)
         for original, translated in zip(text, google_translated):
+            if iftrynarrow == 'try' and len(separator):
+                tmpo = original.split(separator)
+                if len(tmpo) > 1:
+                    tmpt = translated.text.split(separator_out)
+                    if not len(tmpo) == len(tmpt):
+                        tmpt_out, nogood = self.trynarrowdown(tmpo, to_lang)
+                        translated.text = separator.join(tmpt_out)
             yield Translated(original=original,
                              translated=translated.text.strip(),
                              pronounce_original=GoogleTrans._pronounce_origin(translated),

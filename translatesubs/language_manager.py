@@ -36,7 +36,11 @@ class LanguageManager:
             raise Exception('Text needs to be prepared for translation first.')
 
         properly_separated_chunks = self.combine_with_separator()
-        translated = self.translator.translate(properly_separated_chunks, self.to_lang.abbreviation)
+        try:
+            self.translator.set_separator(self.separator) # googletrans
+        except:
+            pass
+        translated = self.translator.translate(properly_separated_chunks, self.to_lang.abbreviation) #iftrynarrow = "try"
 
         # Noticed that when separator contains spaces e.g. ' ∞ ', translated to certain languages separator gets
         # modified e.g. English to Japanese "Hello ∞ everyone" -> "みなさん、こんにちは∞" OR "Minasan, kon'nichiwa ∞"
