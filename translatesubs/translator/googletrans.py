@@ -67,7 +67,7 @@ class GoogleTrans(ITranslator):
             tmpo_right = tmpo[isep:]
             tmpo_right_str = separator.join(tmpo_right)
             tmpt_right_str = self._do_translate(tmpo_right_str, to_lang)
-            tmpt = tmpt_right_str.text.strip().split(separator)
+            tmpt = tmpt_right_str.text.strip().split(separator_out)
             if len(tmpt) == isep:
                 tmpt_out += tmpt
             else:
