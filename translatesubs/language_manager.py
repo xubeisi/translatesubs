@@ -7,6 +7,7 @@ from translatesubs.translator.itranslator import ITranslator
 from translatesubs.translator.language import Language
 from translatesubs.constants import ENDS_OF_SENTENCES, DEFAULT_SEPS, SEP_MAX_LENGTH
 
+#from ipdb import set_trace
 
 class LanguageManager:
 
@@ -107,7 +108,19 @@ class LanguageManager:
             logging.debug(f'sentence: {sentence[0][:10]}...{sentence[-1][-10:]} with {len(sentence)} texts, '
                           f'{char_count} (char count) + {sentence_length} (sentence length) '
                           f'= {char_count + sentence_length} (total)')
-            if char_count + sentence_length > self.translator.get_char_limit():
+
+            if sentence_length > self.translator.get_char_limit():
+                logging.debug(f'Reached the {self.translator.get_char_limit} char limit!')
+                grouped_chunks.append(single_chunk)
+                char_count = 0
+                single_chunk = []
+                n_before = int(len(sentence)/2)
+                sent_before = sentence[:n_before]
+                grouped_chunks.append(sent_before)
+                sent_before = sentence[n_before:]
+                grouped_chunks.append(sent_before)
+                sentence, sentence_length = [], 0
+            elif char_count + sentence_length > self.translator.get_char_limit():
                 logging.debug(f'Reached the {self.translator.get_char_limit} char limit!')
                 grouped_chunks.append(single_chunk)
                 char_count = 0
@@ -135,7 +148,6 @@ class LanguageManager:
         all_possible_endings = ''.join(ENDS_OF_SENTENCES.values())
         sentence_endings = re.compile(f'[{all_possible_endings}]$', flags=re.DOTALL)
         collected = []
-
         for sentence in text_lst:
             collected.append(sentence)
             if sentence_endings.search(sentence):
