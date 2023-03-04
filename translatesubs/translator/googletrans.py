@@ -7,7 +7,7 @@ from translatesubs.translator.language import Language
 from translatesubs.translator.translated import Translated
 from translatesubs.tools import nth
 
-#from ipdb import set_trace
+#from pdb import set_trace
 
 """
 The API has problems with pronunciations: 
@@ -76,7 +76,7 @@ class GoogleTrans(ITranslator):
             tmpo_left_str = separator.join(tmpo_left)
             tmpt_left_str = self.clean_space_in_separator(self._do_translate(tmpo_left_str, to_lang).text.strip())
             tmpt = tmpt_left_str.split(separator_out)
-            if len(tmpt) == isep:
+            if len(tmpt) == len(tmpo_left):
                 tmpt_out += tmpt
             else:
 #                print("left",len(tmpt),isep,tmpo_left_str,tmpt_left_str)
@@ -87,7 +87,7 @@ class GoogleTrans(ITranslator):
             tmpo_right_str = separator.join(tmpo_right)
             tmpt_right_str = self.clean_space_in_separator(self._do_translate(tmpo_left_str, to_lang).text.strip())
             tmpt = tmpt_right_str.split(separator_out)
-            if len(tmpt) == isep:
+            if len(tmpt) == len(tmpo_right):
                 tmpt_out += tmpt
             else:
 #                print("right",len(tmpt),isep,tmpo_right_str,tmpt_right_str)
@@ -103,8 +103,9 @@ class GoogleTrans(ITranslator):
             tmpt_out += tmpt + [ "" ] * (n_nogood)
             nogoods += tmpo_left
         time.sleep(0.2)
-        #print(list(zip(tmpo_left,tmpt_out)))
-        print(f"trynarrowdown: {isep}",nogoods)
+#        if not len(tmpt_out) == len(tmpo):
+#            set_trace()
+        print(f"###trynarrowdown: ",len(tmpt_out), len(tmpo), nogoods)
         return tmpt_out, nogoods
             
     def translate(self, text: List[str], to_lang: str, iftrynarrow = "try") -> Iterator[Translated]:
@@ -117,9 +118,9 @@ class GoogleTrans(ITranslator):
                     tmpt = self.clean_space_in_separator(translated.text.strip()).split(separator_out)
                     if not len(tmpo) == len(tmpt):
                         tmpt_out, nogood = self.trynarrowdown(tmpo, to_lang)
-                        translated.text = separator.join(tmpt_out)
+                        translated.text = separator.join(tmpt_out).strip()
             yield Translated(original=original,
-                             translated=self.clean_space_in_separator(translated.text.strip()),
+                             translated=translated.text,
                              pronounce_original=GoogleTrans._pronounce_origin(translated),
                              pronounce_translated=GoogleTrans._pronounce_translated(translated))
 
