@@ -1,13 +1,13 @@
 import googletrans
 from typing import List, Iterator
 import logging
-import re, time
+import re, time, sys
 from translatesubs.translator.itranslator import ITranslator
 from translatesubs.translator.language import Language
 from translatesubs.translator.translated import Translated
 from translatesubs.tools import nth
 
-#from pdb import set_trace
+from pdb import set_trace
 
 """
 The API has problems with pronunciations: 
@@ -45,6 +45,10 @@ class GoogleTrans(ITranslator):
     separator = " $$$ "
     separator_out = separator.replace(" ","")
     char_limit = 2000
+    ifclean = "clean"
+    def set_clean(self, ifclean: str) -> None:
+        self.ifclean = ifclean
+
     def get_char_limit(self) -> int:
         return self.char_limit
 
@@ -55,11 +59,23 @@ class GoogleTrans(ITranslator):
         self.separator = separator
         self.separator_out = separator.replace(" ","")
 
-    def clean_space_in_separator(self, text: str) -> str:
+    def clean_space_in_separator(self, tmpo: List[str], text0: str) -> str:
         separator, separator_out = self.separator, self.separator_out
+        nori = len(tmpo)
+        text0 = text0.strip()
+        text = text0
+        if self.ifclean == "no":
+            return text
         if len(separator_out) > 1:
-            for to_clean in set([ ' ' + separator_out[0] + ' ', ' ' + separator_out[-1] + ' ', ' ' + separator_out[:2] + ' ' ]):
-                text = text.replace(to_clean,separator_out)
+            if len(text.split(separator)) == nori:
+                return text
+            else:
+                for to_clean in set([ ' ' + separator_out[0] + ' ', ' ' + separator_out[-1] + ' ', ' ' + separator_out[:2] + ' ' ]):
+                    text = text.replace(to_clean,separator_out)
+                if len(text.split(separator)) == nori:
+                    return text
+                else:
+                    return text0
 #                if not len(text1) == len(text):
 #                    print(text,"XXXX\n\nXXXX",text1)
 #                    text = text1
@@ -74,7 +90,7 @@ class GoogleTrans(ITranslator):
         if isep > 2:
             tmpo_left = tmpo[:isep]
             tmpo_left_str = separator.join(tmpo_left)
-            tmpt_left_str = self.clean_space_in_separator(self._do_translate(tmpo_left_str, to_lang).text.strip())
+            tmpt_left_str = self.clean_space_in_separator(tmpo_left,self._do_translate(tmpo_left_str, to_lang).text)
             tmpt = tmpt_left_str.split(separator_out)
             if len(tmpt) == len(tmpo_left):
                 tmpt_out += tmpt
@@ -85,7 +101,7 @@ class GoogleTrans(ITranslator):
                 nogoods += nogood
             tmpo_right = tmpo[isep:]
             tmpo_right_str = separator.join(tmpo_right)
-            tmpt_right_str = self.clean_space_in_separator(self._do_translate(tmpo_left_str, to_lang).text.strip())
+            tmpt_right_str = self.clean_space_in_separator(tmpo_right,self._do_translate(tmpo_right_str, to_lang).text)
             tmpt = tmpt_right_str.split(separator_out)
             if len(tmpt) == len(tmpo_right):
                 tmpt_out += tmpt
@@ -97,7 +113,7 @@ class GoogleTrans(ITranslator):
         else:
             tmpo_left = tmpo
             tmpo_left_str = separator.join(tmpo_left)
-            tmpt_left_str = self.clean_space_in_separator(self._do_translate(tmpo_left_str, to_lang).text.strip())
+            tmpt_left_str = self.clean_space_in_separator(tmpo_left,self._do_translate(tmpo_left_str, to_lang).text)
             tmpt = tmpt_left_str.split(separator_out)
             n_nogood = len(tmpo_left) - len(tmpt)
             tmpt_out += tmpt + [ "" ] * (n_nogood)
@@ -115,7 +131,7 @@ class GoogleTrans(ITranslator):
             if iftrynarrow == 'try' and len(separator):
                 tmpo = original.split(separator)
                 if len(tmpo) > 1:
-                    tmpt = self.clean_space_in_separator(translated.text.strip()).split(separator_out)
+                    tmpt = self.clean_space_in_separator(tmpo,translated.text).split(separator_out)
                     if not len(tmpo) == len(tmpt):
                         tmpt_out, nogood = self.trynarrowdown(tmpo, to_lang)
                         translated.text = separator.join(tmpt_out).strip()
